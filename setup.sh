@@ -280,7 +280,13 @@ run_selector() {
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ══════════════════════════════════════════════════════════════════════════════
-printf '\033[2J\033[H'
+
+# Reiniciar terminal sin scroll — banner aparece pegado arriba
+if command -v tput &>/dev/null; then
+  tput reset
+else
+  printf '\033c'
+fi
 
 echo -e "${BOLD}${CYAN}"'    ___  _______  __  ___  _____
    / _ \/ __/ / \/ / / _ \/ ___/
