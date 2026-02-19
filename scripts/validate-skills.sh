@@ -1,94 +1,94 @@
 #!/usr/bin/env bash
-# validate-skills.sh — Validates all SKILL.md files in the monorepo
+# validate-skills.sh — Valida todos los SKILL.md del repo
 #
-# Usage:
-#   ./scripts/validate-skills.sh               # validate all
-#   ./scripts/validate-skills.sh skills/react-native/rn-no-rerenders/SKILL.md
+# Uso:
+#   bash scripts/validate-skills.sh                              # todos
+#   bash scripts/validate-skills.sh skills/react-native/x/SKILL.md  # uno
 
+if [ -z "$BASH_VERSION" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 
-GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'
-BOLD='\033[1m'; NC='\033[0m'
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PASS=0; FAIL=0; WARN=0
 
-check() {
+validate_file() {
   local file="$1"
-  local errors=(); local warnings=()
+  local errors=() warnings=()
+  local skill tech
+  skill=$(basename "$(dirname "$file")")
+  tech=$(basename "$(dirname "$(dirname "$file")")")
 
-  # Must start with ---
-  if ! head -1 "$file" | grep -q "^---$"; then
-    errors+=("Frontmatter must start on line 1 with ---")
-  fi
-
-  # Must close frontmatter
-  if ! awk 'NR>1 && /^---$/{found=1;exit} END{exit !found}' "$file"; then
-    errors+=("Frontmatter not closed with ---")
-  fi
+  # frontmatter existe y cierra
+  head -1 "$file" | grep -q "^---$" \
+    || errors+=("frontmatter must start on line 1 with ---")
+  awk 'NR>1 && /^---$/{found=1;exit} END{exit !found}' "$file" \
+    || errors+=("frontmatter not closed with ---")
 
   local fm
   fm=$(awk '/^---$/{if(NR==1){in_fm=1;next} else {exit}} in_fm{print}' "$file")
 
-  # name: required, regex ^[a-z0-9]+(-[a-z0-9]+)*$, max 64, must match folder
-  if ! echo "$fm" | grep -qE "^name: [a-z0-9]+(-[a-z0-9]+)*$"; then
-    errors+=("'name' missing or invalid — must match ^[a-z0-9]+(-[a-z0-9]+)*\$")
-  else
-    local name folder
-    name=$(echo "$fm" | grep "^name:" | sed 's/name: //')
-    folder=$(basename "$(dirname "$file")")
-    [[ ${#name} -gt 64 ]] && errors+=("'name' exceeds 64 chars (${#name})")
-    [[ "$folder" != "$name" ]] && errors+=("Folder '$folder' must match name '$name'")
-  fi
+  # name
+  echo "$fm" | grep -qE "^name: [a-z0-9]+(-[a-z0-9]+)*$" \
+    || errors+=("name: missing or invalid format (lowercase-with-hyphens)")
+  local name; name=$(echo "$fm" | grep "^name:" | sed 's/name: //' || true)
+  [[ -n "$name" && "$name" != "$skill" ]] \
+    && errors+=("name '$name' must match folder '$skill'")
 
-  # description: required, min 80 chars, must have trigger clause
-  # Note: block scalar (>) is valid YAML — allowed as long as indentation is consistent
-  if ! echo "$fm" | grep -q "^description:"; then
-    errors+=("'description' field missing")
-  else
-    # Extract description value — handles both single-line and block scalar (>)
-    local desc
-    if echo "$fm" | grep -qE "^description: *>"; then
-      # Block scalar: join the indented lines into one string
-      desc=$(awk '/^description:/{found=1;next} found && /^  /{printf "%s ", $0} found && !/^  /{exit}' <<< "$fm" | tr -s ' ')
-    else
-      desc=$(echo "$fm" | grep "^description:" | sed 's/^description: *//' | tr -d '"')
-    fi
-    [[ ${#desc} -lt 40 ]] && warnings+=("'description' is short — include what it does AND trigger conditions")
-    echo "$desc" | grep -qi "trigger\|use when\|when user" || \
-      warnings+=("'description' missing trigger clause — add 'Trigger: When ...'")
-  fi
+  # description
+  echo "$fm" | grep -q "^description:" \
+    || errors+=("description: field missing")
+  local desc; desc=$(echo "$fm" | grep "^description:" | sed 's/^description: *//' || true)
+  [[ -n "$desc" && ${#desc} -lt 20 ]] \
+    && errors+=("description too short (${#desc} chars, min 20)")
 
-  # license: recommended
-  echo "$fm" | grep -q "^license:" || warnings+=("'license' field missing (recommended: Apache-2.0)")
+  # scope — acepta `scope:` directo o `  scope:` bajo metadata:
+  local scope tech_folder
+  tech_folder=$(basename "$(dirname "$(dirname "$file")")")
+  scope=$(echo "$fm" | grep -E "^\s*scope:" | sed 's/.*scope: *//' | tr -d ' ' | head -1 || true)
+  [[ -z "$scope" ]] \
+    && errors+=("scope: missing — add 'scope: $tech_folder'") \
+    || { [[ "$scope" != "$tech_folder" ]] && errors+=("scope '$scope' must match folder '$tech_folder'"); }
 
-  # No H2 sections
-  grep -q "^## " "$file" || warnings+=("No H2 sections found")
+  # trigger
+  local has_trigger=false
+  echo "$fm" | grep -qi "trigger" && has_trigger=true
+  grep -qiE "^## (Trigger|When to Use)|^Trigger:" "$file" 2>/dev/null && has_trigger=true
+  [[ "$has_trigger" == false ]] \
+    && errors+=("missing trigger clause in description or body")
 
-  # Print result
-  local label
-  label=$(basename "$(dirname "$file")")
+  # version (warning)
+  echo "$fm" | grep -qE "^version: [0-9]+\.[0-9]+\.[0-9]+$" \
+    || warnings+=("version: missing (recommended: 1.0.0)")
+
+  # placeholders sin rellenar (warning)
+  local ph; ph=$(grep -c "<!-- " "$file" 2>/dev/null || true)
+  [[ $ph -gt 0 ]] && warnings+=("$ph placeholder(s) not filled in")
+
+  # imprimir resultado
   if [[ ${#errors[@]} -gt 0 ]]; then
-    echo -e "${RED}✗${NC} ${BOLD}$label${NC}"
-    for e in "${errors[@]}"; do echo -e "  ${RED}ERROR${NC} $e"; done
-    for w in "${warnings[@]}"; do echo -e "  ${YELLOW}WARN${NC}  $w"; done
+    echo "$tech/$skill"
+    for e in "${errors[@]}"; do printf "  error  %s\n" "$e"; done
+    for w in "${warnings[@]}"; do printf "  warn   %s\n" "$w"; done
     ((FAIL++)) || true
   elif [[ ${#warnings[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}⚠${NC} ${BOLD}$label${NC}"
-    for w in "${warnings[@]}"; do echo -e "  ${YELLOW}WARN${NC}  $w"; done
+    echo "$tech/$skill"
+    for w in "${warnings[@]}"; do printf "  warn   %s\n" "$w"; done
     ((WARN++)) || true
   else
-    echo -e "${GREEN}✓${NC} ${BOLD}$label${NC}"
+    echo "$tech/$skill  ok"
     ((PASS++)) || true
   fi
 }
 
-echo -e "\n${BOLD}Validating skills...${NC}\n"
-
+# correr
 if [[ $# -gt 0 ]]; then
-  check "$1"
+  validate_file "$1"
 else
-  while IFS= read -r -d '' f; do check "$f"; done \
-    < <(find skills -name "SKILL.md" -print0 | sort -z)
+  while IFS= read -r -d '' f; do
+    validate_file "$f"
+  done < <(find "$REPO_DIR/skills" -name "SKILL.md" -print0 | sort -z)
 fi
 
-echo -e "\n${GREEN}$PASS passed${NC} | ${YELLOW}$WARN warnings${NC} | ${RED}$FAIL failed${NC}\n"
+echo ""
+echo "$PASS passed  $WARN warnings  $FAIL failed"
 [[ $FAIL -eq 0 ]]

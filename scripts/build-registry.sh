@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# build-registry.sh — Auto-genera registry.json desde la estructura de carpetas
-# Correr antes de cada commit cuando se agrega un skill nuevo
-# O en CI automáticamente
+# build-registry.sh — Genera registry.json desde la estructura de skills/
+#
+# Uso:
+#   bash scripts/build-registry.sh
 
 set -euo pipefail
 
@@ -9,9 +10,6 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="$REPO_DIR/skills"
 OUTPUT="$REPO_DIR/registry.json"
 
-echo "Building registry from $SKILLS_DIR..."
-
-# Construir JSON
 json='{"skills":['
 first=true
 
@@ -25,7 +23,6 @@ for tech_dir in "$SKILLS_DIR"/*/; do
     skill_file="$skill_dir/SKILL.md"
     [[ -f "$skill_file" ]] || continue
 
-    # Extraer description del frontmatter
     desc=$(awk '/^---$/{if(NR==1){in_fm=1;next} else {exit}} in_fm && /^description:/{
       sub(/^description: */,""); gsub(/"/,"\\\""); print; exit
     }' "$skill_file")
@@ -37,12 +34,12 @@ done
 
 json+=']}'
 
-echo "$json" > "$OUTPUT"
-
-# Pretty print si jq está disponible
-if command -v jq &>/dev/null; then
-  echo "$json" | jq . > "$OUTPUT"
+# Pretty print con python3, fallback a raw json
+if command -v python3 &>/dev/null; then
+  echo "$json" | python3 -m json.tool > "$OUTPUT"
+else
+  echo "$json" > "$OUTPUT"
 fi
 
-count=$(echo "$json" | grep -o '"name"' | wc -l | tr -d ' ')
-echo "✓ registry.json updated — $count skills"
+count=$(grep -o '"name"' "$OUTPUT" | wc -l | tr -d ' ')
+echo "registry.json  $count skills"
