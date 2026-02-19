@@ -1,0 +1,29 @@
+{
+  "skills": [
+    {
+      "tech": "angular",
+      "name": "ng-no-rerenders",
+      "description": "Detects and eliminates unnecessary Angular change detection cycles: Default vs OnPush, zone.js over-triggering, signals vs BehaviorSubject cost, missing trackBy in lists, and heavy template expressions. Trigger: When user reports Angular performance issues, CD errors, or excess re-renders."
+    },
+    {
+      "tech": "angular",
+      "name": "ng-solid-dry-kiss",
+      "description": "Applies SOLID, DRY, and KISS principles to Angular TypeScript: single responsibility services, open/closed directives, dependency inversion via InjectionToken, eliminating duplicated interceptors and resolvers, and avoiding over-engineering. Trigger: When user asks to refactor, review, or architect clean Angular code."
+    },
+    {
+      "tech": "generic",
+      "name": "skill-creator",
+      "description": "Creates new skills for monorepo-skills or improves existing ones following repo conventions: correct frontmatter format, single-responsibility content, trigger clauses, and placement in the correct technology folder. Trigger: When user wants to add a skill, capture a workflow, or refine a SKILL.md."
+    },
+    {
+      "tech": "react-native",
+      "name": "rn-no-rerenders",
+      "description": "Detects and eliminates unnecessary re-renders in React Native: inline objects/arrays/functions in JSX, broken memo, unstable useCallback/useMemo deps, FlatList row churn, derived state, and context over-broadcasting. Trigger: When user reports re-renders, flickering, FlatList jank, or wants to optimize rendering performance."
+    },
+    {
+      "tech": "react-native",
+      "name": "rn-solid-dry-kiss",
+      "description": "Applies SOLID, DRY, and KISS principles to React Native TypeScript: single responsibility components, open/closed hooks, dependency inversion via props/context, eliminating duplicated logic, and keeping implementations simple over clever. Trigger: When user asks to refactor, review, or write clean React Native code."
+    }
+  ]
+}
