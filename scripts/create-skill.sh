@@ -184,53 +184,42 @@ TRIGGER_FULL="Trigger: When $TRIGGER"
 tl_done "Trigger: ${GRAY}When $TRIGGER${R}"
 echo ""
 
-# ── Generar SKILL.md ───────────────────────────────────────────────────────────
+# ── Generar SKILL.md desde el template oficial ────────────────────────────────
 DEST="$SKILLS_DIR/$TECH/$NAME"
+TEMPLATE="$REPO_DIR/skills/generic/skill-creator/assets/SKILL-TEMPLATE.md"
+
+if [[ ! -f "$TEMPLATE" ]]; then
+  echo -e "  ${RED}✗${R}  Template not found: $TEMPLATE"
+  exit 1
+fi
+
 mkdir -p "$DEST"
 
 DATE=$(date +%Y-%m-%d)
 
-cat > "$DEST/SKILL.md" << SKILLEOF
----
-name: $NAME
-version: 1.0.0
-description: $DESCRIPTION
-scope: $TECH
-created: $DATE
----
-
-# $NAME
-
-## Overview
-
-<!-- Describe what this skill does and why it exists -->
-
-## Rules
-
-<!-- List the concrete rules the AI agent must follow -->
-
-1. 
-
-## Examples
-
-### ✅ Good
-
-\`\`\`
-<!-- Show a correct example -->
-\`\`\`
-
-### ❌ Bad
-
-\`\`\`
-<!-- Show what to avoid -->
-\`\`\`
-
-## $TRIGGER_FULL
-
-<!-- Add any additional context the AI needs -->
-SKILLEOF
+# Copiar template y reemplazar placeholders
+sed \
+  -e "s|^name: skill-name$|name: $NAME|" \
+  -e "s|^description:.*|description: $DESCRIPTION Trigger: When $TRIGGER|" \
+  -e "s|scope: react-native|scope: $TECH|" \
+  -e "s|  author: deuna|  author: deuna\n  version: 1.0.0\n  created: $DATE|" \
+  "$TEMPLATE" > "$DEST/SKILL.md"
 
 tl_done "Created ${CYAN}$DEST/SKILL.md${R}"
+
+# ── Validar el skill recién creado ─────────────────────────────────────────────
+VALIDATE_SCRIPT="$REPO_DIR/scripts/validate-skills.sh"
+if [[ -f "$VALIDATE_SCRIPT" ]]; then
+  echo ""
+  validation_output=$(bash "$VALIDATE_SCRIPT" "$DEST/SKILL.md" 2>&1)
+  if echo "$validation_output" | grep -q "error"; then
+    echo "$validation_output"
+    echo ""
+    echo -e "  ${YELLOW}⚠${R}  Skill created with validation issues — fill them in before committing"
+  else
+    tl_done "Validation passed"
+  fi
+fi
 
 # ── Regenerar registry ─────────────────────────────────────────────────────────
 if [[ -f "$REGISTRY_SCRIPT" ]]; then
