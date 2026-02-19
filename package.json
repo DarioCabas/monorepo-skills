@@ -1,0 +1,21 @@
+{
+  "name": "@deuna/agent-skills",
+  "version": "1.0.0",
+  "description": "Agent Skills for React Native and Angular — DEUNA",
+  "scripts": {
+    "setup": "bash setup.sh",
+    "validate": "bash scripts/validate-skills.sh",
+    "new": "bash scripts/create-skill.sh"
+  },
+  "keywords": [
+    "agent-skills",
+    "claude-code",
+    "opencode",
+    "react-native",
+    "angular"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
