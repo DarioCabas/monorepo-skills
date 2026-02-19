@@ -5,7 +5,7 @@
 # PRIVATE repo → usa symlinks si ya tienes el repo clonado localmente
 #
 # Uso público (sin clonar):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/YOUR_ORG/monorepo-skills/main/setup.sh)
+#   curl -fsSL https://raw.githubusercontent.com/YOUR_ORG/monorepo-skills/main/setup.sh | bash
 #
 # Uso local (repo clonado):
 #   ./setup.sh
@@ -265,7 +265,7 @@ echo -e "  ${BOLD}Next:${NC} Restart OpenCode to load the skills."
 echo ""
 if [[ "$MODE" == "remote" ]]; then
   echo -e "  ${BOLD}To update:${NC} re-run this script"
-  echo -e "  ${DIM}bash <(curl -fsSL $RAW_BASE/setup.sh)${NC}"
+  echo -e "  ${DIM}curl -fsSL $RAW_BASE/setup.sh | bash${NC}"
 else
   echo -e "  ${BOLD}To update:${NC} git pull in $REPO_DIR"
   echo -e "  ${DIM}Symlinks update automatically.${NC}"
