@@ -52,10 +52,13 @@ ask_input() {
 
 # ── Banner ─────────────────────────────────────────────────────────────────────
 printf '\033c'
-echo -e "${BOLD}${CYAN}"'    ___  _______  __  ___  _____
-   / _ \/ __/ / \/ / / _ \/ ___/
-  / // / _// /\  / / // / (_ /
- /____/___/_/ /_/ /____/\___/'"${R}"
+cat << "EOF"
+    ____                               
+   / __ \___  __  ______  ____ _       
+  / / / / _ \/ / / / __ \/ __ `/       
+ / /_/ /  __/ /_/ / / / / /_/ /        
+/_____/\___/\__,_/_/ /_/\__,_/         
+EOF
 echo -e "  ${CYAN}${BOLD} @deuna/agent-skills ${R}  ${GRAY}new skill${R}"
 echo ""
 
@@ -166,21 +169,49 @@ done
 tl_done "Description: ${GRAY}$DESCRIPTION${R}"
 echo ""
 
-# ── Step 4: Trigger ────────────────────────────────────────────────────────────
-tl_ask "Trigger clause"
-tl_info "When should the AI agent use this skill? Complete: 'Trigger: When...'"
-echo ""
+# ── Step 4: Trigger — sugerido desde la description ───────────────────────────
+# Inferir trigger: extraer verbos/contexto clave de la description
+# Patrones: "Detects X" → "user reports X", "Applies X to Y" → "user asks to refactor Y", etc.
+SUGGESTED_TRIGGER=""
 
-TRIGGER=""
-while [[ -z "$TRIGGER" ]]; do
+desc_lower=$(echo "$DESCRIPTION" | tr '[:upper:]' '[:lower:]')
+
+if echo "$desc_lower" | grep -qE "detect|eliminat|find|identify|prevent"; then
+  # "Detects unnecessary re-renders" → "user reports performance issues or re-renders"
+  subject=$(echo "$DESCRIPTION" | sed 's/[Dd]etects //;s/[Ee]liminates //;s/[Ff]inds //;s/[Ii]dentifies //' | cut -c1-50)
+  SUGGESTED_TRIGGER="user reports $subject"
+elif echo "$desc_lower" | grep -qE "appl|enforc|ensur|implement"; then
+  # "Applies SOLID to Angular" → "user asks to refactor or review Angular code"
+  SUGGESTED_TRIGGER="user asks to refactor, review, or write $TECH code"
+elif echo "$desc_lower" | grep -qE "creat|generat|scaffold|build"; then
+  subject=$(echo "$DESCRIPTION" | sed 's/[Cc]reates\? //;s/[Gg]enerates\? //;s/[Ss]caffolds\? //' | cut -c1-40)
+  SUGGESTED_TRIGGER="user wants to create $subject"
+elif echo "$desc_lower" | grep -qE "migrat|upgrad|convert"; then
+  SUGGESTED_TRIGGER="user needs to migrate or upgrade existing $TECH code"
+elif echo "$desc_lower" | grep -qE "optim|improv|speed|performance|fast"; then
+  SUGGESTED_TRIGGER="user reports performance issues or wants to optimize $TECH code"
+fi
+
+tl_ask "Trigger"
+if [[ -n "$SUGGESTED_TRIGGER" ]]; then
+  tl_info "Suggested based on your description — press Enter to accept or type a new one"
+  echo ""
+  echo -ne "  ${GRAY}◇${R}  Trigger: When ${CYAN}$SUGGESTED_TRIGGER${R} "
+  echo -ne "${GRAY}[Enter to accept]${R} "
+  read -r TRIGGER_INPUT
+  TRIGGER="${TRIGGER_INPUT:-$SUGGESTED_TRIGGER}"
+else
+  tl_info "Complete: 'Trigger: When ...'"
+  echo ""
   echo -ne "  ${GRAY}◇${R}  Trigger: When "
   read -r TRIGGER
-  if [[ -z "$TRIGGER" ]]; then
+  while [[ -z "$TRIGGER" ]]; do
     echo -e "  ${YELLOW}!${R}  Trigger is required"
-  fi
-done
+    echo -ne "  ${GRAY}◇${R}  Trigger: When "
+    read -r TRIGGER
+  done
+fi
 
-TRIGGER_FULL="Trigger: When $TRIGGER"
 tl_done "Trigger: ${GRAY}When $TRIGGER${R}"
 echo ""
 
@@ -235,9 +266,3 @@ tl_info "Path:  $DEST/SKILL.md"
 tl_info "Next:  git add skills/$TECH/$NAME && git commit -m \"feat($TECH): add $NAME\""
 echo ""
 
-# Abrir en editor si está disponible
-if command -v cursor &>/dev/null; then
-  cursor "$DEST/SKILL.md"
-elif command -v code &>/dev/null; then
-  code "$DEST/SKILL.md"
-fi
