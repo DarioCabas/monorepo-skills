@@ -22,7 +22,7 @@ Siguiendo el estándar [agentskills.io](https://agentskills.io) — compatible c
 Ve a la carpeta de tu proyecto y ejecuta:
 
 ```bash
-curl -fsSL [https://raw.githubusercontent.com/DarioCabas/monorepo-skills/main/setup.sh](https://raw.githubusercontent.com/DarioCabas/monorepo-skills/main/setup.sh) -o /tmp/deuna-setup.sh && bash /tmp/deuna-setup.sh && rm /tmp/deuna-setup.sh
+curl -fsSL https://raw.githubusercontent.com/DarioCabas/monorepo-skills/main/setup.sh  -o /tmp/deuna-setup.sh && bash /tmp/deuna-setup.sh && rm /tmp/deuna-setup.sh
 ```
 
 > **Windows:** abre WSL y ejecuta el mismo comando.
