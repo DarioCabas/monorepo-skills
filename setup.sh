@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-GITHUB_ORG="DarioCabas"
+GITHUB_ORG="YOUR_ORG"
 GITHUB_REPO="monorepo-skills"
 GITHUB_BRANCH="main"
 RAW_BASE="https://raw.githubusercontent.com/$GITHUB_ORG/$GITHUB_REPO/$GITHUB_BRANCH"
@@ -140,9 +140,9 @@ while true; do
   if [[ "$choice" == "a" || "$choice" == "A" ]]; then
     SELECTED_TECHS=("${TECHS[@]}"); break
   fi
-  valid=true; temp=()
+  valid=true; temp=(); picks=()
   IFS=',' read -ra picks <<< "$choice"
-  for pick in "${picks[@]}"; do
+  for pick in "${picks[@]+"${picks[@]}"}"; do
     pick="${pick// /}"
     if [[ "$pick" =~ ^[0-9]+$ ]] && (( pick >= 1 && pick < i )); then
       temp+=("${TECHS[$((pick-1))]}")
@@ -186,9 +186,9 @@ while true; do
   if [[ "$choice" == "a" || "$choice" == "A" ]]; then
     SELECTED=("${AVAILABLE[@]}"); break
   fi
-  valid=true; temp=()
+  valid=true; temp=(); picks=()
   IFS=',' read -ra picks <<< "$choice"
-  for pick in "${picks[@]}"; do
+  for pick in "${picks[@]+"${picks[@]}"}"; do
     pick="${pick// /}"
     if [[ "$pick" =~ ^[0-9]+$ ]] && (( pick >= 1 && pick < i )); then
       temp+=("${AVAILABLE[$((pick-1))]}")
